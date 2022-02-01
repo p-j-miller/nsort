@@ -4,14 +4,14 @@
 CPP      = g++.exe
 CC       = gcc.exe
 WINDRES  = windres.exe
-OBJ      = nsort.o atof.o
-LINKOBJ  = nsort.o atof.o
-LIBS     = -L"C:/mingw64/lib" -L"C:/mingw64/x86_64-w64-mingw32/lib" -static-libgcc
+OBJ      = nsort.o atof.o qsort.o heapsort.o
+LINKOBJ  = nsort.o atof.o qsort.o heapsort.o
+LIBS     = -L"C:/mingw64/lib" -L"C:/mingw64/x86_64-w64-mingw32/lib" -static-libgcc -m64
 INCS     = -I"C:/mingw64/include" -I"C:/mingw64/x86_64-w64-mingw32/include" -I"C:/mingw64/lib/gcc/x86_64-w64-mingw32/9.2.1/include"
 CXXINCS  = -I"C:/mingw64/include" -I"C:/mingw64/x86_64-w64-mingw32/include" -I"C:/mingw64/lib/gcc/x86_64-w64-mingw32/9.2.1/include"
 BIN      = nsort.exe
-CXXFLAGS = $(CXXINCS) -march=native -Ofast -std=c99 -Wall
-CFLAGS   = $(INCS) -march=native -Ofast -std=c99 -Wall
+CXXFLAGS = $(CXXINCS) -march=native -Ofast -m64 -std=c99 -Wall
+CFLAGS   = $(INCS) -march=native -Ofast -m64 -std=c99 -Wall
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
@@ -29,3 +29,9 @@ nsort.o: nsort.c
 
 atof.o: atof.c
 	$(CC) -c atof.c -o atof.o $(CFLAGS)
+
+qsort.o: qsort.c
+	$(CC) -c qsort.c -o qsort.o $(CFLAGS)
+
+heapsort.o: heapsort.c
+	$(CC) -c heapsort.c -o heapsort.o $(CFLAGS)

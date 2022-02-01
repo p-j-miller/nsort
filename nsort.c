@@ -11,18 +11,19 @@
    
    Has limits on line length and total number of lines as it reads the whole input into RAM before sorting it.
    
-   Uses standard library qsort function to actually do the sorting.
    sorts into increasing order.
    
-   This version (c) Peter Miller 2020.
-   Uses (optionally, but by default) fast_atof from https://github.com/p-j-miller/ya-sprintf  
+   This version (c) Peter Miller 2022.
+   Uses (optionally, but by default) fast_atof from https://github.com/p-j-miller/ya-sprintf  and qsort from https://github.com/p-j-miller/yasort-and-yamedian
    
    Version 1.0 31/12/2020 - 1st version on github
+   Version 1.1 1/2/2022 - swapped to use qsort.c from yasort-and-yamedian as this is always O(n*log(n)) execution speed and all available processors for sorting which can be a lot faster
+   						- on a 2 processor PC the sort phase was 2.5* faster and the complete time 1.5* faster on the 1M line test file.
 
 */
 
 /*----------------------------------------------------------------------------
- * Copyright (c) 2020 Peter Miller
+ * Copyright (c) 2020,2022 Peter Miller
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -45,6 +46,7 @@
  *--------------------------------------------------------------------------*/
 /* Define __USE_MINGW_ANSI_STDIO to 1 to use C99 compatible stdio functions on MinGW. see for example https://stackoverflow.com/questions/44382862/how-to-printf-a-size-t-without-warning-in-mingw-w64-gcc-7-1 */
 // #define __USE_MINGW_ANSI_STDIO 1   /* if this is defined then writing to stdout > NUL is VERY slow (70 secs vs 4 secs) ! Note strtof() etc are still much slower than fast_atof() etc */
+/* use mingw64 as compiler - latest TDM-GCC 10.3.0 has __USE_MINGW_ANSI_STDIO set to 1 by default so is very slow writing to NUL: and much slower writing to stdout generally  */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -55,17 +57,18 @@
 #include <math.h>
 #include <stdint.h>  /* for int64_t etc */
 #include <inttypes.h> /* to print uint64_t */
+#include "qsort.h" /* qsort.c used */
 
-#define VERSION "1.0"
+#define VERSION "1.1" /* using qsort.c rather than libc qsort */
 
-#define USE_FAST_ATOF /* if defined use my fast_atol() [which should be much faster] , otherwise use strtod() from the standard library */
+#define USE_FAST_ATOF /* if defined use my fast_atol() from ya-sprintf [which should be much faster] , otherwise use strtod() from the standard library */
 
 #if defined(USE_FAST_ATOF) 
 double fast_atof(const char *string,bool * not_number)	; // converts string to double. Skips leading whitespace. sets not_number true if no number found (and returns 0) otherwise sets it false and returns number read.
 double fast_strtod(const char *s,char ** endptr);// like strtod() but faster
 double fast_atof_nan(const char *s);// like fast_atof, but returns NAN if the string does not start with a valid number
 float fast_strtof(const char *s,char **endptr); // like strtof() but faster
-const int fast_strtof_u; // tell rest of system we are using u64's or u32's (only useful for diagnostics/debugging)
+extern const int fast_strtof_u; // tell rest of system we are using u64's or u32's (only useful for diagnostics/debugging)
 #endif
 
 char *strdup(const char *s); // not in gcc 5.1.0 string.h
@@ -93,7 +96,7 @@ void writelines(void);
 int numcmp(const char *, const char *);
 
 
- /* use qsort in standard library as that's probably more efficient than rolling our own - these are the compare routines it needs */
+ /*  these are the compare routines for qsort() */
 int mysCompare (const void * a, const void * b ) { /* compare as strings */
     const char *pa = *(const char**)a;
     const char *pb = *(const char**)b;
@@ -110,7 +113,7 @@ int mynCompare (const void * a, const void * b ) { /* compare as numbers */
 /* numcmp: compare s1 and s2 numerically */
 /* this version allows numbers in quotes if -q option is specified on command line (quoted_numbers=true) */
 /* also treats non-numbers as very large negative numbers to the sort first [ so a csv file header wil stay at the front of the file ] */
-/* v1.3 - if numbers are identical then sort as strings. This is needed for -u option, but defines order so seens sensible anyway */
+/* if numbers are identical then sort as strings. This is needed for -u option, but defines order so seens sensible anyway */
 
 int numcmp(const char *s1, const char  *s2)
 {
