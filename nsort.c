@@ -19,6 +19,9 @@
    Version 1.0 31/12/2020 - 1st version on github
    Version 1.1 1/2/2022 - swapped to use qsort.c from yasort-and-yamedian as this is always O(n*log(n)) execution speed and all available processors for sorting which can be a lot faster
    						- on a 2 processor PC the sort phase was 2.5* faster and the complete time 1.5* faster on the 1M line test file.
+   Version 1.2 27/6/2025 - bug fix - if very last line had some characters before EOF and was shorter than the previous line then part of previous line was left in the buffer
+   						 - also changed to gcc 15.1.0 with ucrt
+   						 - numeric sorts now do a 2nd level compare on whole string if numbers are identical (previously stripped whitespace before string compare)
 
 */
 
@@ -59,7 +62,7 @@
 #include <inttypes.h> /* to print uint64_t */
 #include "qsort.h" /* qsort.c used */
 
-#define VERSION "1.1" /* using qsort.c rather than libc qsort */
+#define VERSION "1.2" /* using qsort.c rather than libc qsort */
 
 #define USE_FAST_ATOF /* if defined use my fast_atol() from ya-sprintf [which should be much faster] , otherwise use strtod() from the standard library */
 
@@ -120,6 +123,7 @@ int numcmp(const char *s1, const char  *s2)
 #ifdef  nsort_num_float /* if defined do numeric sorts with float rather tha double */	
  float v1,v2;
  char *sret;
+ const char *p1=s1,*p2=s2;
 #else
  double v1, v2;
 
@@ -168,7 +172,7 @@ int numcmp(const char *s1, const char  *s2)
 #endif  
 #endif
  if(v1==v2)
- 	return strcmp(s1,s2);	
+ 	return strcmp(p1,p2);	// p1 & p2 mean we use the whole line for the comparison
  if (v1 < v2)
 	return -1;
  else
@@ -214,7 +218,9 @@ char *readline (FILE *fp)
                   *cp++=c;
                  }
          if(c==EOF)
-                return cp==buf ? NULL : buf; /* if we hit EOF then return last line if any */
+         		{*cp='\0'; /* end of string - in case there were some characters read before EOF */
+                 return cp==buf ? NULL : buf; /* if we hit EOF then return last line if any */
+            	}
 #if 1
 		 new_size= (buf_size | 1023) + 1021; // Increase the size of the buffer a "bit", rounds up to next multiple of 1024 and adds 1020. from an idea at https://stackoverflow.com/questions/43594181/using-parallel-arrays-in-c-to-sort-out-lines-of-data
 #else                
@@ -277,7 +283,8 @@ int main(int argc, char *argv[])
 {
  bool numeric = false; /* true if numeric sort */
  char c;
- clock_t start_t,end_t; 
+ clock_t start_t,end_t, begin_t; 
+ begin_t=clock();// for total time
  /* based on argument parser from K&R pp 117. allows both nsort -nq and nsort -n -q */
  while(--argc>0 && (*++argv)[0] == '-')
  	{ while( (c= *++argv[0]) ) /* yes this is an assignment operator !, extra brackets due to gcc warning. */
@@ -364,8 +371,8 @@ int main(int argc, char *argv[])
 	writelines(); /* write out lines in sorted order */
  	if(verbose)
  		{
- 		 end_t=clock();
- 		 fprintf(stderr,"nsort: output written in %.3f secs\n",(end_t-start_t)/(double)(CLOCKS_PER_SEC));
+ 		 end_t=clock(); 
+ 		 fprintf(stderr,"nsort: output written in %.3f secs. Total execution time was %.3f secs\n",(end_t-start_t)/(double)(CLOCKS_PER_SEC),(end_t-begin_t)/(double)(CLOCKS_PER_SEC));
  		} 	
 	return 0;
    } else {
