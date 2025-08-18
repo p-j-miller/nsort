@@ -27,6 +27,12 @@ nsort is a filter (input from stdin and output to stdout) so to sort in numerica
   For Windows use a compiled file is supplied (nsort.exe).
   See the file INSTALL for instructions to compile the code yourself for Windows and Linux.
   
- Version 1.0 - 1st release
+* Version 1.0 - 1st release
  
- Version 1.1 - use qsort from https://github.com/p-j-miller/yasort-and-yamedian , on Windows this uses all available processor cores to speed up the sorting. No changes in functionality.
+* Version 1.1 - use qsort from https://github.com/p-j-miller/yasort-and-yamedian , on Windows this uses all available processor cores to speed up the sorting. No changes in functionality.
+
+* Version 1.2
+    - bug fix - if very last line had some characters before EOF and was shorter than the previous line then part of previous line was left in the buffer
+    - numeric sorts now do a 2nd level compare on whole string if numbers are identical (previously stripped whitespace before string compare)
+    - changed to gcc 15.1.0 with ucrt
+    - updated to use qsort 2v0 from https://github.com/p-j-miller/yasort-and-yamedian which sorts a little faster (note the total time is dominated by reading in and writing out the file rather than the actual sorting).
