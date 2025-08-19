@@ -12,16 +12,20 @@ nsort is a filter (input from stdin and output to stdout) so to sort in numerica
 
  nsort sorts lines into increasing order.
 
+ As of version 2v0, input and output files can be directly specified on the command line.
 ```
- Usage: nsort [-nquv?h]
-  -n lines are assumed to start with numbers and sorting is done on these.
-     if the numbers are identical they are sorted as strings
-     non-numeric lines will sort first (so a csv files header should stay first)
-  -q sort on initial numbers in double quotes (implies -n)
-     otherwise (no -n or -q option given) sort lines as strings
-  -u only print lines that are unique (ie deletes duplicates)
-  -v verbose output (to stderr) - prints execution time etc
-  -? or -h prints (this) help message then exists
+  Usage: nsort [-nquv?h] [-o ofile] [ifile]
+	nsort sorts stdin or ifile if thats given on the command line.
+	-n lines are assumed to start with numbers and sorting is done on these.
+	   if the numbers are identical the lines are sorted as strings
+	-q sort on initial numbers in double quotes (implies -n) 
+	   otherwise sort lines as strings
+	-u only print lines that are unique (ie deletes duplicates)
+	-o save sorted output in ofile (by default its written to stdout)
+	-v verbose output (to stderr) - prints execution time etc
+	-? or -h prints (this) help message then exists
+	If [ifile] is provided input is read from this (single) file, otherwise stdin is read
+	It is OK for ofile and ifile to be the same file, but clearly the original contents of the file are lost in this case
  ```
  
   For Windows use a compiled file is supplied (nsort.exe).
@@ -36,3 +40,9 @@ nsort is a filter (input from stdin and output to stdout) so to sort in numerica
     - numeric sorts now do a 2nd level compare on whole string if numbers are identical (previously stripped whitespace before string compare)
     - changed to gcc 15.1.0 with ucrt
     - updated to use qsort 2v0 from https://github.com/p-j-miller/yasort-and-yamedian which sorts a little faster (note the total time is dominated by reading in and writing out the file rather than the actual sorting).
+
+
+* Version 2.0
+    - Major change - this version can sort files that are larger than the available RAM (size is only limited by available(free) harddisk space).
+    - input and output files can be specified on the command line
+    - Speed improvements
